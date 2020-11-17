@@ -19,15 +19,13 @@ transactions = []
 
 for x in range (0, 50):
     transaction_type = 'credit'
-    transaction_amount = random.randint(0, 10000)
-    transac_date = datetime.datetime.now().isoformat()
-
     if (x % 2) == 0:
         transaction_type = 'debit'
 
-    transactions.append({'type': transaction_type, 
-                        'amount': transaction_amount, 
-                        'effective_date': transac_date})
+    transactions.append({'id': x,
+                        'type': transaction_type, 
+                        'amount': random.randint(0, 10000), 
+                        'effective_date': datetime.datetime.now().isoformat()})
 
 def op_Locked():
     return aux_transac['lock']
@@ -38,7 +36,7 @@ def cancel_if_locked():
 
 class Balance(Resource):
     def get(self):
-        sumat = sum((lambda v: v['amount'] if v['type'] == 'credit' else -v['amount'])(v)  for (k,v) in transactions.items())
+        sumat = sum((lambda v: v['amount'] if v['type'] == 'credit' else -v['amount'])(v)  for (k,v) in transactions)
         return sumat
 
 class TransactionsHistory(Resource):
