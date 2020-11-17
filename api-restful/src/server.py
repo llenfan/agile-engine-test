@@ -1,12 +1,12 @@
 from flask import Flask
 from flask_restful import reqparse, abort, Api, Resource
 from flask_cors import CORS, cross_origin
+from flask import jsonify
 
 import datetime
 import time
 import random
 import json
-from flask import jsonify
 
 app = Flask(__name__)
 api = Api(app)
@@ -58,8 +58,8 @@ def add_transaction(tr_id, tr_type, amount, date):
     transaction = {}
     transaction['id'] = tr_id
     transaction['type'] = tr_type
-    transaction['amount'] = amount
-    transaction['effective_date'] = date
+    transaction['amount'] = amoun
+t    transaction['effective_date'] = date
 
     if is_valid_transaction(transaction):
         transactions.insert(tr_id, transaction)
