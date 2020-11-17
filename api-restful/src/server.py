@@ -3,19 +3,28 @@ from flask_restful import reqparse, abort, Api, Resource
 
 import datetime
 import time
+import random
+import json
+from flask import jsonify
 
 app = Flask(__name__)
 api = Api(app)
 
 aux_transac = {'id': 0, 'lock': False}
-transactions = {
-  '1': {'type': 'credit', 'ammount': 5000, 'effectiveDate': datetime.datetime.now().isoformat()},
-  '2': {'type': 'debit', 'ammount': 2000, 'effectiveDate': datetime.datetime.now().isoformat()},
-  '3': {'type': 'debit', 'ammount': 3000, 'effectiveDate': datetime.datetime.now().isoformat()},
-  '4': {'type': 'credit', 'ammount': 5000, 'effectiveDate': datetime.datetime.now().isoformat()}
-}
 
-counterst = 0
+transactions = []
+
+for x in range (0, 50):
+    transaction_type = 'credit'
+    transaction_amount = random.randint(0, 10000)
+    transac_date = datetime.datetime.now().isoformat()
+
+    if (x % 2) == 0:
+        transaction_type = 'debit'
+
+    transactions.append({'type': transaction_type, 
+                        'amount': transaction_amount, 
+                        'effective_date': transac_date})
 
 def op_Locked():
     return aux_transac['lock']
@@ -26,12 +35,13 @@ def cancel_if_locked():
 
 class Balance(Resource):
     def get(self):
-        sumat = sum((lambda v: v['ammount'] if v['type'] == 'credit' else -v['ammount'])(v)  for (k,v) in transactions.items())
+        sumat = sum((lambda v: v['amount'] if v['type'] == 'credit' else -v['amount'])(v)  for (k,v) in transactions.items())
         return sumat
 
 class TransactionsHistory(Resource):
     def get(self):
-        resp = [{'id': k, **v} for (k,v) in transactions.items()]
+        #resp = [{'id': k, **v} for (k,v) in transactions.items()]
+        resp = jsonify(transactions)
         return resp
 
 class AddTransaction(Resource):
@@ -41,7 +51,7 @@ class AddTransaction(Resource):
 
         parser = reqparse.RequestParser()
         parser.add_argument('type', required=True)
-        parser.add_argument('ammount', required=True)
+        parser.add_argument('amount', required=True)
         args = parser.parse_args()
 
         current_transac_id = aux_transac['id']
@@ -50,7 +60,7 @@ class AddTransaction(Resource):
         
         aux_transac['lock'] = True
 
-        transactions[current_transac_id] = {'type' : args['type'], 'ammount': args['ammount'], 'effectiveDate': datetime.datetime.now().isoformat()}
+        transactions[current_transac_id] = {'type' : args['type'], 'amount': args['amount'], 'effectiveDate': datetime.datetime.now().isoformat()}
         
         time.sleep(5)  # a wide window of time to help tests
 
