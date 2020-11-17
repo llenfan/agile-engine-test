@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_restful import reqparse, abort, Api, Resource
+from flask_cors import CORS, cross_origin
 
 import datetime
 import time
@@ -9,6 +10,8 @@ from flask import jsonify
 
 app = Flask(__name__)
 api = Api(app)
+cors = CORS(app)
+cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 aux_transac = {'id': 0, 'lock': False}
 
