@@ -16,7 +16,7 @@ transactions = []
 transaction_lock = {'locked': False}
 
 
-def op_Locked():
+def op_locked():
     return transaction_lock['locked']
 
 
@@ -32,11 +32,6 @@ def is_valid_transaction(transaction):
     if transaction['amount'] < 0:
         return False
     return True
-
-
-def cancel_if_locked():
-    if op_Locked():
-        abort(503, message="Locked")
 
 
 def get_new_transcation_id():
@@ -97,7 +92,9 @@ class TransactionsHistory(Resource):
 
 class AddTransaction(Resource):
     def post(self):
-        cancel_if_locked()
+        if op_locked():
+            return "Locked", 201
+
         parser = reqparse.RequestParser()
         parser.add_argument('type', required=True)
         parser.add_argument('amount', required=True)
@@ -121,7 +118,8 @@ class AddTransaction(Resource):
 
 class Transactions(Resource):
     def get(self, transaction_id):
-        cancel_if_locked()
+        if op_locked():
+            return "Locked", 201
         transaction = get_transaction_by_id(int(transaction_id))
         if transaction:
             return transaction, 201
