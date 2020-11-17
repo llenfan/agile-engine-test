@@ -36,7 +36,7 @@ def is_valid_transaction(transaction):
 
 def cancel_if_locked():
     if op_Locked():
-        abort(404, message="Locked!")
+        abort(503, message="Locked")
 
 
 def get_new_transcation_id():
@@ -64,7 +64,7 @@ def add_transaction(tr_id, tr_type, amount, date):
     if is_valid_transaction(transaction):
         transactions.insert(tr_id, transaction)
         return transaction
-    return False
+    abort(422, message="Error: insufficient balance or invalid amount")
 
 
 def populate_transactions(initial_credit=500000, random_transactions=10):
@@ -126,7 +126,7 @@ class Transactions(Resource):
         if transaction:
             return transaction, 201
         else:
-            return {}, 422
+            abort(422, message="Transaction not found")
 
     def delete(self, transaction_id):
         return '', 500
