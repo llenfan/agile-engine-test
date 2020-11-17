@@ -13,11 +13,11 @@ api = Api(app)
 cors = CORS(app)
 cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 transactions = []
-transaction_lock = False
+transaction_lock = {'locked': False}
 
 
 def op_Locked():
-    return transaction_lock
+    return transaction_lock['locked']
 
 
 def get_balance():
@@ -108,14 +108,14 @@ class AddTransaction(Resource):
         amount = int(args['amount'])
         date = datetime.datetime.now().isoformat()
 
-        transaction_lock = True
+        transaction_lock['locked'] = True
         tr = add_transaction(tr_id, tr_type, amount, date)
         if tr:
             time.sleep(0.5)
-            transaction_lock = False
+            transaction_lock['locked'] = False
             return tr, 201
 
-        transaction_lock = False
+        transaction_lock['locked'] = False
         return {}, 422
 
 
