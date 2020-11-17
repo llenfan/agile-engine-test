@@ -58,8 +58,8 @@ def add_transaction(tr_id, tr_type, amount, date):
     transaction = {}
     transaction['id'] = tr_id
     transaction['type'] = tr_type
-    transaction['amount'] = amoun
-t    transaction['effective_date'] = date
+    transaction['amount'] = amount
+    transaction['effective_date'] = date
 
     if is_valid_transaction(transaction):
         transactions.insert(tr_id, transaction)
@@ -111,7 +111,7 @@ class AddTransaction(Resource):
         transaction_lock = True
         tr = add_transaction(tr_id, tr_type, amount, date)
         if tr:
-            time.sleep(2)
+            time.sleep(0.5)
             transaction_lock = False
             return tr, 201
 
