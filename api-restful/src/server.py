@@ -13,35 +13,63 @@ api = Api(app)
 cors = CORS(app)
 cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-aux_transac = {'id': 0, 'lock': False}
-
-transactions = []
-
-for x in range (0, 50):
-    transaction_type = 'credit'
-    if (x % 2) == 0:
-        transaction_type = 'debit'
-
-    transactions.append({'id': x,
-                        'type': transaction_type, 
-                        'amount': random.randint(0, 10000), 
-                        'effective_date': datetime.datetime.now().isoformat()})
+transaction_lock = False
 
 def op_Locked():
-    return aux_transac['lock']
+    return transaction_lock
+
+def get_balance():
+    return sum((lambda v: t['amount'] if t['type'] == 'credit' else -t['amount'])(t)  for t in transactions)
+
+def is_valid_transaction(transaction):
+    balance = get_balance()
+    if transaction['type'] == 'debit' and balance < transaction['amount']:
+        return False
+    if transaction['amount'] < 0:
+        return False
+
+    return True
 
 def cancel_if_locked():
     if op_Locked():
         abort(404, message="Locked!")
 
+def get_new_transcation_id():
+    last_id = 1
+    for t in transactions:
+        if t['id'] > last_id:
+            last_id = t['id']
+    return last_id + 1
+
+def get_transaction_by_id(transaction_id):
+    for t in transactions:
+        if t['id'] == transaction_id:
+            return t
+    return False
+
+
+
+transactions = []
+
+for x in range (1, 50):
+    transaction_type = 'credit'
+    if (x % 2) == 0:
+        transaction_type = 'debit'
+
+    transaction = {'id': x,
+                    'type': transaction_type, 
+                    'amount': random.randint(10, 10000), 
+                    'effective_date': datetime.datetime.now().isoformat()}
+
+    if is_valid_transaction(transaction):
+        transactions.append(transaction)
+
 class Balance(Resource):
     def get(self):
-        sumat = sum((lambda v: v['amount'] if v['type'] == 'credit' else -v['amount'])(v)  for (k,v) in transactions)
-        return sumat
+        return get_balance()
 
 class TransactionsHistory(Resource):
     def get(self):
-        #resp = [{'id': k, **v} for (k,v) in transactions.items()]
         resp = jsonify(transactions)
         return resp
 
@@ -54,36 +82,40 @@ class AddTransaction(Resource):
         parser.add_argument('type', required=True)
         parser.add_argument('amount', required=True)
         args = parser.parse_args()
+        transaction_id = get_new_transcation_id()
 
-        current_transac_id = aux_transac['id']
-        current_transac_id = current_transac_id + 1
-        aux_transac['id'] = current_transac_id
+        transaction_lock = True
+
+        new_transaction =  {'id': transaction_id, 
+                            'type' : args['type'], 
+                            'amount': int(args['amount']), 
+                            'effective_date': datetime.datetime.now().isoformat()}
+        if is_valid_transaction(new_transaction):
+            transactions.insert(transaction_id, new_transaction)
+            time.sleep(2) 
+            transaction_lock = False
+            return new_transaction, 201
+            
+        transaction_lock = False
+        return {}, 422
         
-        aux_transac['lock'] = True
-
-        transactions[current_transac_id] = {'type' : args['type'], 'amount': args['amount'], 'effectiveDate': datetime.datetime.now().isoformat()}
         
-        time.sleep(5)  # a wide window of time to help tests
-
-        aux_transac['lock'] = False
-
-        resp = {'id' : current_transac_id, **transactions[current_transac_id]}
-        
-        return resp, 201
-
 class Transactions(Resource):
     def get(self, transaction_id):
         
         cancel_if_locked()
-
-        resp = {'id' : transaction_id, **transactions[transaction_id]}
-        return resp, 201
+        transaction = get_transaction_by_id(int(transaction_id))
+        if transaction:
+            return transaction, 201
+        else:
+            return {}, 422
 
     def delete(self, transaction_id):
         return '', 500
 
     def put(self, transaction_id):
         return '', 500
+
 
 ##
 ## Actually setup the Api resource routing here
